@@ -94,7 +94,7 @@ def main():
         sess.run(tf.global_variables_initializer())
         for i in range(0, 100):
             if i % 10 == 0:
-                print(sess.run(alex_net.accuracy(labels, )))
+                print(sess.run(loss, feed_dict={alex_net.keep_prob: 1}))
             sess.run(train_step, feed_dict={alex_net.keep_prob: 0.5})
 
 
