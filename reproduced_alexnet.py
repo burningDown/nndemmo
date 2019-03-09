@@ -8,7 +8,7 @@ class AlexNet:
     network = None
     keep_prob = tf.placeholder(dtype=tf.float32)
     x = tf.placeholder(dtype=tf.float32, shape=[None, 32, 32, 3])
-    label = tf.placeholder(dtype=tf.float32, shape=[None, 10])
+    label = tf.placeholder(dtype=tf.int32, shape=[None, 1])
     weights = {
         "w1": tf.Variable(tf.truncated_normal(shape=[11, 11, 3, 96], stddev=0.1)),
         "w2": tf.Variable(tf.truncated_normal(shape=[5, 5, 96, 256], stddev=0.1)),
@@ -34,7 +34,7 @@ class AlexNet:
     def get_images(self, mini_batch):
         def map_reshape(value):
             record_bytes = tf.decode_raw(value, tf.uint8)
-            label = tf.cast(tf.strided_slice(record_bytes, [0], [1]), tf.float32)
+            label = tf.cast(tf.strided_slice(record_bytes, [0], [1]), tf.int32)
             img = tf.cast(tf.transpose(tf.reshape(tf.strided_slice(record_bytes, [1], [3073]), shape=[3, 32, 32]), [1, 2, 0]), tf.float32)
             return img, label
         filenames = tf.constant([FILE_NAME])
@@ -75,13 +75,14 @@ class AlexNet:
         return self.layers["softmax"]
 
     def loss(self, y):
-        return tf.reduce_mean(-tf.reduce_sum(self.label*tf.log(y), axis=[1]))
+        one_hot_labels = tf.one_hot(self.label, 10, dtype=tf.float32)
+        return tf.reduce_mean(-tf.reduce_sum(one_hot_labels*tf.log(y), axis=[1]))
 
     def train_step(self, loss, alpha=0.0001):
         return tf.train.AdamOptimizer(alpha).minimize(loss)
 
     def accuracy(self, y):
-        correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(self.label, 1))
+        correct_prediction = tf.equal(tf.argmax(y, 1), tf.cast(self.label, dtype=tf.int64))
         return tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 
@@ -90,14 +91,17 @@ def main():
     network = alex_net.inference()
     loss = alex_net.loss(network)
     train_step = alex_net.train_step(loss)
+    acc = alex_net.accuracy(network)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         for i in range(0, 500):
+            images, labels = sess.run(alex_net.get_images(10))
+            sess.run(train_step, feed_dict={alex_net.keep_prob: 0.5, alex_net.x: images, alex_net.label: labels})
             if i % 10 == 0:
                 print(i)
-            images, labels = alex_net.get_images(10)
-            sess.run(train_step, feed_dict={alex_net.keep_prob: 0.5, alex_net.x: images, alex_net.label: labels})
+                if i % 50 == 0:
+                    print(sess.run(network, feed_dict={alex_net.keep_prob: 1, alex_net.x: images, alex_net.label: labels}))
 
 
 if __name__ == "__main__":
