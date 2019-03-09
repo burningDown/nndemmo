@@ -51,19 +51,19 @@ class AlexNet:
             conv = tf.nn.relu(tf.nn.conv2d(self.layers["conv1"],
                                            self.weights["w2"], [1, 1, 1, 1], 'SAME') + self.bias["b2"])
             self.layers["conv2"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
-        with tf.name_scope("conv3"):
-            self.layers["conv3"] = tf.nn.relu(tf.nn.conv2d(self.layers["conv2"],
-                                                           self.weights["w3"], [1, 1, 1, 1], 'SAME') + self.bias["b3"])
-        with tf.name_scope("conv4"):
-            self.layers["conv4"] = tf.nn.relu(tf.nn.conv2d(self.layers["conv3"],
-                                                           self.weights["w4"], [1, 1, 1, 1], 'SAME') + self.bias["b4"])
-        with tf.name_scope("conv5"):
-            conv = tf.nn.relu(tf.nn.conv2d(self.layers["conv4"],
-                                           self.weights["w5"], [1, 1, 1, 1], 'SAME') + self.bias["b5"])
-            self.layers["conv5"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
+        # with tf.name_scope("conv3"):
+        #     self.layers["conv3"] = tf.nn.relu(tf.nn.conv2d(self.layers["conv2"],
+        #                                                    self.weights["w3"], [1, 1, 1, 1], 'SAME') + self.bias["b3"])
+        # with tf.name_scope("conv4"):
+        #     self.layers["conv4"] = tf.nn.relu(tf.nn.conv2d(self.layers["conv3"],
+        #                                                    self.weights["w4"], [1, 1, 1, 1], 'SAME') + self.bias["b4"])
+        # with tf.name_scope("conv5"):
+        #     conv = tf.nn.relu(tf.nn.conv2d(self.layers["conv4"],
+        #                                    self.weights["w5"], [1, 1, 1, 1], 'SAME') + self.bias["b5"])
+        #     self.layers["conv5"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("fc1"):
-            conv5_shape = self.layers["conv5"].shape[1] * self.layers["conv5"].shape[2] * self.layers["conv5"].shape[3]
-            reshaped_conv5 = tf.reshape(self.layers["conv5"], shape=[-1, conv5_shape.value])
+            conv5_shape = self.layers["conv2"].shape[1] * self.layers["conv2"].shape[2] * self.layers["conv2"].shape[3]
+            reshaped_conv5 = tf.reshape(self.layers["conv2"], shape=[-1, conv5_shape.value])
             self.weights["w6"] = tf.Variable(tf.truncated_normal(shape=[conv5_shape.value, 512], stddev=0.1))
             self.layers["fc1"] = tf.nn.dropout(tf.nn.relu(tf.matmul(reshaped_conv5, self.weights["w6"])
                                                           + self.bias["b6"]), self.keep_prob)
