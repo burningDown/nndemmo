@@ -76,7 +76,7 @@ class AlexNet:
         one_hot_labels = tf.one_hot(self.label, 10, dtype=tf.float32)
         return tf.reduce_mean(-tf.reduce_sum(one_hot_labels*tf.log(y), axis=[1]))
 
-    def train_step(self, loss, alpha=0.0001):
+    def train_step(self, loss, alpha=0.00005):
         return tf.train.AdamOptimizer(alpha).minimize(loss)
 
     def accuracy(self, y):
@@ -98,16 +98,13 @@ def main():
     acc = alex_net.accuracy(network)
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for i in range(0, 10000):
+        for i in range(0, 25000):
             if i % 500 == 0 and i != 0:
                 image_batch = alex_net.get_images(filenames, 100)
             images, labels = sess.run(image_batch)
             # print(sess.run(alex_net.layers["softmax"], feed_dict={alex_net.keep_prob: 1, alex_net.x: images, alex_net.label: labels}))
-            sess.run(train_step, feed_dict={alex_net.keep_prob: 0.5, alex_net.x: images, alex_net.label: labels})
-            if i % 1 == 0:
-                print(i)
-                if i % 1 == 0:
-                    print(sess.run(acc, feed_dict={alex_net.keep_prob: 1, alex_net.x: images, alex_net.label: labels}))
+            result = sess.run((train_step, acc, loss), feed_dict={alex_net.keep_prob: 0.5, alex_net.x: images, alex_net.label: labels})
+            print("%d: acc=%f, loss=%f" % (i, result[1], result[2]))
         image_batch = alex_net.get_images(["/root/workspace/data_input/cifar-10-batches-bin/test_batch.bin"], 10000)
         images, labels = sess.run(image_batch)
         print("test:", sess.run(acc, feed_dict={alex_net.keep_prob: 1, alex_net.x: images, alex_net.label: labels}))
