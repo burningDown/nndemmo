@@ -87,7 +87,7 @@ def get_img():
 
 
 def main():
-    mnist = input_data.read_data_sets('E:/data_input/mnist', one_hot=True)
+    mnist = input_data.read_data_sets('/root/workspace/data_input/mnist', one_hot=True)
     nn = Nn()
     sess = tf.Session()
     accuracy = nn.cnn_build_and_train(mnist, sess)
