@@ -1,11 +1,6 @@
 import tensorflow as tf
 
 
-FILES = ["/root/workspace/data_input/cifar-10-batches-bin/data_batch_1.bin",
-         "/root/workspace/data_input/cifar-10-batches-bin/data_batch_2.bin",
-         "/root/workspace/data_input/cifar-10-batches-bin/data_batch_3.bin",
-         "/root/workspace/data_input/cifar-10-batches-bin/data_batch_4.bin",
-         "/root/workspace/data_input/cifar-10-batches-bin/data_batch_5.bin"]
 class AlexNet:
     network = None
     keep_prob = tf.placeholder(dtype=tf.float32)
@@ -33,14 +28,14 @@ class AlexNet:
     }
     layers = {}
 
-    def get_images(self, mini_batch):
+    def get_images(self, files, mini_batch):
         def map_reshape(value):
             record_bytes = tf.decode_raw(value, tf.uint8)
             label = tf.cast(tf.strided_slice(record_bytes, [0], [1]), tf.int32)
             img = tf.cast(tf.transpose(tf.reshape(tf.strided_slice(record_bytes, [1], [3073]), shape=[3, 32, 32]), [1, 2, 0]), tf.float32)
             img = tf.image.per_image_standardization(img)
             return img, label[0]
-        filenames = tf.constant(FILES)
+        filenames = tf.constant(files)
         file_dataset = tf.data.FixedLengthRecordDataset(filenames, 3073)\
             .map(map_reshape, num_parallel_calls=100).batch(mini_batch)
         return file_dataset.make_one_shot_iterator().get_next()
@@ -94,14 +89,18 @@ def main():
     network = alex_net.inference()
     loss = alex_net.loss(network)
     train_step = alex_net.train_step(loss)
-    image_batch = alex_net.get_images(100)
+    filenames = ["/root/workspace/data_input/cifar-10-batches-bin/data_batch_1.bin",
+             "/root/workspace/data_input/cifar-10-batches-bin/data_batch_2.bin",
+             "/root/workspace/data_input/cifar-10-batches-bin/data_batch_3.bin",
+             "/root/workspace/data_input/cifar-10-batches-bin/data_batch_4.bin",
+             "/root/workspace/data_input/cifar-10-batches-bin/data_batch_5.bin"]
+    image_batch = alex_net.get_images(filenames, 100)
     acc = alex_net.accuracy(network)
-
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         for i in range(0, 10000):
             if i % 500 == 0 and i != 0:
-                image_batch = alex_net.get_images(100)
+                image_batch = alex_net.get_images(filenames, 100)
             images, labels = sess.run(image_batch)
             # print(sess.run(alex_net.layers["softmax"], feed_dict={alex_net.keep_prob: 1, alex_net.x: images, alex_net.label: labels}))
             sess.run(train_step, feed_dict={alex_net.keep_prob: 0.5, alex_net.x: images, alex_net.label: labels})
@@ -109,6 +108,9 @@ def main():
                 print(i)
                 if i % 1 == 0:
                     print(sess.run(acc, feed_dict={alex_net.keep_prob: 1, alex_net.x: images, alex_net.label: labels}))
+        image_batch = alex_net.get_images(["/root/workspace/data_input/cifar-10-batches-bin/test_batch.bin"], 10000)
+        images, labels = sess.run(image_batch)
+        print("test:", sess.run(acc, feed_dict={alex_net.keep_prob: 1, alex_net.x: images, alex_net.label: labels}))
 
 
 if __name__ == "__main__":
