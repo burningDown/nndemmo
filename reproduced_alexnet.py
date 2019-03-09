@@ -10,23 +10,23 @@ class AlexNet:
     x = tf.placeholder(dtype=tf.float32, shape=[None, 32, 32, 3])
     label = tf.placeholder(dtype=tf.int32, shape=[None, 1])
     weights = {
-        "w1": tf.Variable(tf.truncated_normal(shape=[11, 11, 3, 96], stddev=0.1)),
-        "w2": tf.Variable(tf.truncated_normal(shape=[5, 5, 96, 256], stddev=0.1)),
-        "w3": tf.Variable(tf.truncated_normal(shape=[3, 3, 256, 384], stddev=0.1)),
-        "w4": tf.Variable(tf.truncated_normal(shape=[3, 3, 384, 384], stddev=0.1)),
-        "w5": tf.Variable(tf.truncated_normal(shape=[3, 3, 384, 256], stddev=0.1)),
-        "w6": tf.Variable(tf.truncated_normal(shape=[4*4*256, 4096], stddev=0.1)),
-        "w7": tf.Variable(tf.truncated_normal(shape=[4096, 4096], stddev=0.1)),
-        "w8": tf.Variable(tf.truncated_normal(shape=[4096, 10], stddev=0.1))
+        "w1": tf.Variable(tf.truncated_normal(shape=[11, 11, 3, 24], stddev=0.01)),
+        "w2": tf.Variable(tf.truncated_normal(shape=[5, 5, 24, 64], stddev=0.01)),
+        "w3": tf.Variable(tf.truncated_normal(shape=[3, 3, 64, 96], stddev=0.01)),
+        "w4": tf.Variable(tf.truncated_normal(shape=[3, 3, 96, 96], stddev=0.01)),
+        "w5": tf.Variable(tf.truncated_normal(shape=[3, 3, 96, 64], stddev=0.01)),
+        "w6": None,
+        "w7": tf.Variable(tf.truncated_normal(shape=[512, 512], stddev=0.1)),
+        "w8": tf.Variable(tf.truncated_normal(shape=[512, 10], stddev=0.1))
     }
     bias = {
-        "b1": tf.Variable(tf.constant(value=0.1, shape=[96])),
-        "b2": tf.Variable(tf.constant(value=0.1, shape=[256])),
-        "b3": tf.Variable(tf.constant(value=0.1, shape=[384])),
-        "b4": tf.Variable(tf.constant(value=0.1, shape=[384])),
-        "b5": tf.Variable(tf.constant(value=0.1, shape=[256])),
-        "b6": tf.Variable(tf.constant(value=0.1, shape=[4096])),
-        "b7": tf.Variable(tf.constant(value=0.1, shape=[4096])),
+        "b1": tf.Variable(tf.constant(value=0.1, shape=[24])),
+        "b2": tf.Variable(tf.constant(value=0.1, shape=[64])),
+        "b3": tf.Variable(tf.constant(value=0.1, shape=[96])),
+        "b4": tf.Variable(tf.constant(value=0.1, shape=[96])),
+        "b5": tf.Variable(tf.constant(value=0.1, shape=[64])),
+        "b6": tf.Variable(tf.constant(value=0.1, shape=[512])),
+        "b7": tf.Variable(tf.constant(value=0.1, shape=[512])),
         "b8": tf.Variable(tf.constant(value=0.1, shape=[10]))
     }
     layers = {}
@@ -62,14 +62,14 @@ class AlexNet:
                                            self.weights["w5"], [1, 1, 1, 1], 'SAME') + self.bias["b5"])
             self.layers["conv5"] = tf.nn.max_pool(conv, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("fc1"):
-            reshaped_conv5 = tf.reshape(self.layers["conv5"], shape=[-1, self.layers["conv5"].shape[1]
-                                                                     * self.layers["conv5"].shape[2]
-                                                                     * self.layers["conv5"].shape[3]])
+            conv5_shape = self.layers["conv5"].shape[1] * self.layers["conv5"].shape[2] * self.layers["conv5"].shape[3]
+            reshaped_conv5 = tf.reshape(self.layers["conv5"], shape=[-1, conv5_shape.value])
+            self.weights["w6"] = tf.Variable(tf.truncated_normal(shape=[conv5_shape.value, 512], stddev=0.1))
             self.layers["fc1"] = tf.nn.dropout(tf.nn.relu(tf.matmul(reshaped_conv5, self.weights["w6"])
-                                                          + self.bias["b6"]), self.keep_prob)
+                                                          + self.bias["b6"]), 1)
         with tf.name_scope("fc2"):
             self.layers["fc2"] = tf.nn.dropout(tf.nn.relu(tf.matmul(self.layers["fc1"], self.weights["w7"])
-                                                          + self.bias["b7"]), self.keep_prob)
+                                                          + self.bias["b7"]), 1)
         with tf.name_scope("softmax"):
             self.layers["softmax"] = tf.nn.softmax(tf.matmul(self.layers["fc2"], self.weights["w8"]) + self.bias["b8"])
         return self.layers["softmax"]
@@ -78,7 +78,7 @@ class AlexNet:
         one_hot_labels = tf.one_hot(self.label, 10, dtype=tf.float32)
         return tf.reduce_mean(-tf.reduce_sum(one_hot_labels*tf.log(y), axis=[1]))
 
-    def train_step(self, loss, alpha=0.0001):
+    def train_step(self, loss, alpha=0.001):
         return tf.train.AdamOptimizer(alpha).minimize(loss)
 
     def accuracy(self, y):
@@ -95,13 +95,14 @@ def main():
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
+        images, labels = sess.run(alex_net.get_images(1000))
         for i in range(0, 500):
-            images, labels = sess.run(alex_net.get_images(10))
+
             sess.run(train_step, feed_dict={alex_net.keep_prob: 0.5, alex_net.x: images, alex_net.label: labels})
             if i % 10 == 0:
                 print(i)
                 if i % 50 == 0:
-                    print(sess.run(network, feed_dict={alex_net.keep_prob: 1, alex_net.x: images, alex_net.label: labels}))
+                    print(sess.run(acc, feed_dict={alex_net.keep_prob: 1, alex_net.x: images, alex_net.label: labels}))
 
 
 if __name__ == "__main__":
