@@ -7,8 +7,8 @@ FILE_NAME = "/root/workspace/data_input/cifar-10-batches-bin/data_batch_1.bin"
 class AlexNet:
     network = None
     keep_prob = tf.placeholder(dtype=tf.float32)
-    x = tf.placeholder(dtype=tf.float32)
-    label = tf.placeholder(dtype=tf.float32)
+    x = tf.placeholder(dtype=tf.float32, shape=[None, 32, 32, 3])
+    label = tf.placeholder(dtype=tf.float32, shape=[None, 10])
     weights = {
         "w1": tf.Variable(tf.truncated_normal(shape=[11, 11, 3, 96], stddev=0.1)),
         "w2": tf.Variable(tf.truncated_normal(shape=[5, 5, 96, 256], stddev=0.1)),
