@@ -46,11 +46,11 @@ class AlexNet:
         with tf.name_scope("conv1"):
             # self.convs["conv1"]
             conv = tf.nn.relu(tf.nn.conv2d(self.x, self.weights["w1"], [1, 1, 1, 1], 'SAME') + self.bias["b1"])
-            self.layers["conv1"] = tf.nn.max_pool(conv, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME')
+            self.layers["conv1"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("conv2"):
             conv = tf.nn.relu(tf.nn.conv2d(self.layers["conv1"],
                                            self.weights["w2"], [1, 1, 1, 1], 'SAME') + self.bias["b2"])
-            self.layers["conv2"] = tf.nn.max_pool(conv, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME')
+            self.layers["conv2"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("conv3"):
             self.layers["conv3"] = tf.nn.relu(tf.nn.conv2d(self.layers["conv2"],
                                                            self.weights["w3"], [1, 1, 1, 1], 'SAME') + self.bias["b3"])
@@ -60,16 +60,16 @@ class AlexNet:
         with tf.name_scope("conv5"):
             conv = tf.nn.relu(tf.nn.conv2d(self.layers["conv4"],
                                            self.weights["w5"], [1, 1, 1, 1], 'SAME') + self.bias["b5"])
-            self.layers["conv5"] = tf.nn.max_pool(conv, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME')
+            self.layers["conv5"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("fc1"):
             conv5_shape = self.layers["conv5"].shape[1] * self.layers["conv5"].shape[2] * self.layers["conv5"].shape[3]
             reshaped_conv5 = tf.reshape(self.layers["conv5"], shape=[-1, conv5_shape.value])
             self.weights["w6"] = tf.Variable(tf.truncated_normal(shape=[conv5_shape.value, 512], stddev=0.1))
             self.layers["fc1"] = tf.nn.dropout(tf.nn.relu(tf.matmul(reshaped_conv5, self.weights["w6"])
-                                                          + self.bias["b6"]), 1)
+                                                          + self.bias["b6"]), self.keep_prob)
         with tf.name_scope("fc2"):
             self.layers["fc2"] = tf.nn.dropout(tf.nn.relu(tf.matmul(self.layers["fc1"], self.weights["w7"])
-                                                          + self.bias["b7"]), 1)
+                                                          + self.bias["b7"]), self.keep_prob)
         with tf.name_scope("softmax"):
             self.layers["softmax"] = tf.nn.softmax(tf.matmul(self.layers["fc2"], self.weights["w8"]) + self.bias["b8"])
         return self.layers["softmax"]
