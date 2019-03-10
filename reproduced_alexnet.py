@@ -1,11 +1,12 @@
 import tensorflow as tf
 
 IMAGE_INFO = {
-    "data_path": ["/root/workspace/data_input/cifar-10-batches-bin/data_batch_1.bin",
-             "/root/workspace/data_input/cifar-10-batches-bin/data_batch_2.bin",
-             "/root/workspace/data_input/cifar-10-batches-bin/data_batch_3.bin",
-             "/root/workspace/data_input/cifar-10-batches-bin/data_batch_4.bin",
-             "/root/workspace/data_input/cifar-10-batches-bin/data_batch_5.bin"],
+    "data_path": [
+        "/root/workspace/data_input/cifar-10-batches-bin/data_batch_1.bin",
+        "/root/workspace/data_input/cifar-10-batches-bin/data_batch_2.bin",
+        "/root/workspace/data_input/cifar-10-batches-bin/data_batch_3.bin",
+        "/root/workspace/data_input/cifar-10-batches-bin/data_batch_4.bin",
+        "/root/workspace/data_input/cifar-10-batches-bin/data_batch_5.bin"],
     "test_path": ["/root/workspace/data_input/cifar-10-batches-bin/test_batch.bin"],
     "size": 32,
     "depth": 3
