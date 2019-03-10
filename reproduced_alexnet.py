@@ -18,6 +18,7 @@ class AlexNet:
     __loss = None
     __train_step = None
     __acc = None
+    __initialized = False
     keep_prob = tf.placeholder(dtype=tf.float32)
     x = tf.placeholder(dtype=tf.float32, shape=[None, IMAGE_INFO["size"], IMAGE_INFO["size"], IMAGE_INFO["depth"]])
     label = tf.placeholder(dtype=tf.int32, shape=[None])
@@ -107,35 +108,42 @@ class AlexNet:
         self.__network = lay
         self.__loss = None
         self.__acc = None
+        self.__initialized = False
 
     def __inf_loss(self):
         if self.__loss is None:
             if self.__network is None:
-                self.inference()
+                self.__inference()
             one_hot_labels = tf.one_hot(self.label, 10, dtype=tf.float32)
             self.__loss = tf.reduce_mean(-tf.reduce_sum(one_hot_labels * tf.log(self.__network), axis=[1]))
 
     def __inf_train_step(self, alpha):
         if self.__train_step is None or alpha != 0.0005:
             if self.__loss is None:
-                self.get_loss()
+                self.__inf_loss()
             self.__train_step = tf.train.AdamOptimizer(alpha).minimize(self.__loss)
 
     def __inf_acc(self):
         if self.__acc is None:
             if self.__network is None:
-                self.inference()
+                self.__inference()
             correct_prediction = tf.equal(tf.argmax(self.__network, 1), tf.cast(self.label, dtype=tf.int64))
             self.__acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     def train_one_step(self, sess, images, labels, alpha=0.0005):
         self.__inf_train_step(alpha)
-        self.__acc()
+        self.__inf_acc()
+        if not self.__initialized:
+            sess.run(tf.global_variables_initializer())
+            self.__initialized = True
         return sess.run((self.__train_step, self.__acc, self.__loss), feed_dict={self.keep_prob: 0.5, self.x: images, self.label: labels})
 
     def test(self, sess, images, labels):
-        self.__acc()
-        return sess.run(self.acc, feed_dict={self.keep_prob: 1, self.x: images, self.label: labels})
+        self.__inf_acc()
+        if not self.__initialized:
+            sess.run(tf.global_variables_initializer())
+            self.__initialized = True
+        return sess.run(self.__acc, feed_dict={self.keep_prob: 1, self.x: images, self.label: labels})
 
 
 def main():
@@ -144,7 +152,6 @@ def main():
     alex_net = AlexNet()
     image_batch = alex_net.get_images(IMAGE_INFO["data_path"], batch)
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
         for i in range(0,5000):
             if i % (50000 / batch) == 0 and i != 0:
                 image_batch = alex_net.get_images(IMAGE_INFO["data_path"], batch)
