@@ -146,7 +146,7 @@ class AlexNet:
         return sess.run(self.__acc, feed_dict={self.keep_prob: 1, self.x: images, self.label: labels})
 
 
-def main():
+def main(argv):
     alpha = 0.0002
     batch = 100
     alex_net = AlexNet()
@@ -167,4 +167,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    tf.app.run()
