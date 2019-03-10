@@ -14,14 +14,14 @@ IMAGE_INFO = {
 
 
 class AlexNet:
-    network = None,
-    loss = None,
-    train_step = None,
-    acc = None,
+    __network = None
+    __loss = None
+    __train_step = None
+    __acc = None
     keep_prob = tf.placeholder(dtype=tf.float32)
     x = tf.placeholder(dtype=tf.float32, shape=[None, IMAGE_INFO["size"], IMAGE_INFO["size"], IMAGE_INFO["depth"]])
     label = tf.placeholder(dtype=tf.int32, shape=[None])
-    weights = [
+    __weights = [
         [3, 48],
         [3, 128],
         [3, 192],
@@ -30,7 +30,7 @@ class AlexNet:
         [2048],
         [2048]
     ]
-    layers = {}
+    __layers = {}
 
     def get_images(self, files, mini_batch):
         def map_reshape(value):
@@ -53,94 +53,94 @@ class AlexNet:
 
     def inference(self):
         with tf.name_scope("conv1"):
-            w = tf.Variable(tf.truncated_normal(shape=[self.weights[0][0],
-                                                       self.weights[0][0],
+            w = tf.Variable(tf.truncated_normal(shape=[self.__weights[0][0],
+                                                       self.__weights[0][0],
                                                        3,
-                                                       self.weights[0][1]], stddev=0.01))
-            b = tf.Variable(tf.constant(value=0.1, shape=[self.weights[0][1]])),
+                                                       self.__weights[0][1]], stddev=0.01))
+            b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[0][1]])),
             conv = tf.nn.relu(tf.nn.conv2d(self.x, w, [1, 1, 1, 1], 'SAME') + b)
-            lay = self.layers["conv1"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
+            lay = self.__layers["conv1"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("conv2"):
-            w = tf.Variable(tf.truncated_normal(shape=[self.weights[1][0],
-                                                       self.weights[1][0],
-                                                       self.weights[0][1],
-                                                       self.weights[1][1]], stddev=0.01))
-            b = tf.Variable(tf.constant(value=0.1, shape=[self.weights[1][1]]))
+            w = tf.Variable(tf.truncated_normal(shape=[self.__weights[1][0],
+                                                       self.__weights[1][0],
+                                                       self.__weights[0][1],
+                                                       self.__weights[1][1]], stddev=0.01))
+            b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[1][1]]))
             conv = tf.nn.relu(tf.nn.conv2d(lay, w, [1, 1, 1, 1], 'SAME') + b)
-            lay = self.layers["conv2"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
+            lay = self.__layers["conv2"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("conv3"):
-            w = tf.Variable(tf.truncated_normal(shape=[self.weights[2][0],
-                                                       self.weights[2][0],
-                                                       self.weights[1][1],
-                                                       self.weights[2][1]], stddev=0.01))
-            b = tf.Variable(tf.constant(value=0.1, shape=[self.weights[2][1]]))
-            lay = self.layers["conv3"] = tf.nn.relu(tf.nn.conv2d(lay, w, [1, 1, 1, 1], 'SAME') + b)
+            w = tf.Variable(tf.truncated_normal(shape=[self.__weights[2][0],
+                                                       self.__weights[2][0],
+                                                       self.__weights[1][1],
+                                                       self.__weights[2][1]], stddev=0.01))
+            b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[2][1]]))
+            lay = self.__layers["conv3"] = tf.nn.relu(tf.nn.conv2d(lay, w, [1, 1, 1, 1], 'SAME') + b)
         with tf.name_scope("conv4"):
-            w = tf.Variable(tf.truncated_normal(shape=[self.weights[3][0],
-                                                       self.weights[3][0],
-                                                       self.weights[2][1],
-                                                       self.weights[3][1]], stddev=0.01))
-            b = tf.Variable(tf.constant(value=0.1, shape=[self.weights[3][1]]))
-            lay = self.layers["conv4"] = tf.nn.relu(tf.nn.conv2d(lay, w, [1, 1, 1, 1], 'SAME') + b)
+            w = tf.Variable(tf.truncated_normal(shape=[self.__weights[3][0],
+                                                       self.__weights[3][0],
+                                                       self.__weights[2][1],
+                                                       self.__weights[3][1]], stddev=0.01))
+            b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[3][1]]))
+            lay = self.__layers["conv4"] = tf.nn.relu(tf.nn.conv2d(lay, w, [1, 1, 1, 1], 'SAME') + b)
         with tf.name_scope("conv5"):
-            w = tf.Variable(tf.truncated_normal(shape=[self.weights[4][0],
-                                                       self.weights[4][0],
-                                                       self.weights[3][1],
-                                                       self.weights[4][1]], stddev=0.01))
-            b = tf.Variable(tf.constant(value=0.1, shape=[self.weights[4][1]]))
+            w = tf.Variable(tf.truncated_normal(shape=[self.__weights[4][0],
+                                                       self.__weights[4][0],
+                                                       self.__weights[3][1],
+                                                       self.__weights[4][1]], stddev=0.01))
+            b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[4][1]]))
             conv = tf.nn.relu(tf.nn.conv2d(lay, w, [1, 1, 1, 1], 'SAME') + b)
-            lay = self.layers["conv5"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
+            lay = self.__layers["conv5"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("fc1"):
             conv5_shape = lay.shape[1] * lay.shape[2] * lay.shape[3]
             reshaped_conv5 = tf.reshape(lay, shape=[-1, conv5_shape.value])
-            w = tf.Variable(tf.truncated_normal(shape=[conv5_shape.value, self.weights[5][0]], stddev=0.1))
-            b = tf.Variable(tf.constant(value=0.1, shape=[self.weights[5][0]]))
-            lay = self.layers["fc1"] = tf.nn.dropout(tf.nn.relu(tf.matmul(reshaped_conv5, w) + b), self.keep_prob)
+            w = tf.Variable(tf.truncated_normal(shape=[conv5_shape.value, self.__weights[5][0]], stddev=0.1))
+            b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[5][0]]))
+            lay = self.__layers["fc1"] = tf.nn.dropout(tf.nn.relu(tf.matmul(reshaped_conv5, w) + b), self.keep_prob)
         with tf.name_scope("fc2"):
-            w = tf.Variable(tf.truncated_normal(shape=[self.weights[5][0], self.weights[6][0]], stddev=0.01))
-            b = tf.Variable(tf.constant(value=0.1, shape=[self.weights[6][0]]))
-            lay = self.layers["fc2"] = tf.nn.dropout(tf.nn.relu(tf.matmul(lay, w) + b), self.keep_prob)
+            w = tf.Variable(tf.truncated_normal(shape=[self.__weights[5][0], self.__weights[6][0]], stddev=0.01))
+            b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[6][0]]))
+            lay = self.__layers["fc2"] = tf.nn.dropout(tf.nn.relu(tf.matmul(lay, w) + b), self.keep_prob)
         with tf.name_scope("softmax"):
-            w = tf.Variable(tf.truncated_normal(shape=[self.weights[6][0], 10], stddev=0.01))
+            w = tf.Variable(tf.truncated_normal(shape=[self.__weights[6][0], 10], stddev=0.01))
             b = tf.Variable(tf.constant(value=0.1, shape=[10]))
-            lay = self.layers["softmax"] = tf.nn.softmax(tf.matmul(lay, w) + b)
-        self.network = lay
-        self.loss = None
-        self.acc = None
+            lay = self.__layers["softmax"] = tf.nn.softmax(tf.matmul(lay, w) + b)
+        self.__network = lay
+        self.__loss = None
+        self.__acc = None
         return lay
 
-    def loss(self):
-        if self.loss is None:
-            if self.network is None:
+    def get_loss(self):
+        if self.__loss is None:
+            if self.__network is None:
                 self.inference()
             one_hot_labels = tf.one_hot(self.label, 10, dtype=tf.float32)
-            self.loss = tf.reduce_mean(-tf.reduce_sum(one_hot_labels*tf.log(self.network), axis=[1]))
-        return self.loss
+            self.__loss = tf.reduce_mean(-tf.reduce_sum(one_hot_labels * tf.log(self.__network), axis=[1]))
+        return self.__loss
 
-    def train_step(self, alpha=0.0005):
-        if self.train_step is None:
-            if self.loss is None:
-                self.loss()
-            self.train_step = tf.train.AdamOptimizer(alpha).minimize(self.loss)
-        return self.train_step
+    def get_train_step(self, alpha=0.0005):
+        if self.__train_step is None:
+            if self.__loss is None:
+                self.get_loss()
+            self.__train_step = tf.train.AdamOptimizer(alpha).minimize(self.__loss)
+        return self.__train_step
 
-    def accuracy(self):
-        if self.acc is None:
-            if self.network is None:
+    def get_acc(self):
+        if self.__acc is None:
+            if self.__network is None:
                 self.inference()
-            correct_prediction = tf.equal(tf.argmax(self.network, 1), tf.cast(self.label, dtype=tf.int64))
-            self.acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        return self.acc
+            correct_prediction = tf.equal(tf.argmax(self.__network, 1), tf.cast(self.label, dtype=tf.int64))
+            self.__acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        return self.__acc
 
 
 def main():
     alpha = 0.0005
     batch = 100
     alex_net = AlexNet()
-    loss = alex_net.loss()
-    train_step = alex_net.train_step(alpha)
+    loss = alex_net.get_loss()
+    train_step = alex_net.get_train_step(alpha)
     image_batch = alex_net.get_images(IMAGE_INFO["data_path"], batch)
-    acc = alex_net.accuracy()
+    acc = alex_net.get_acc()
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         for i in range(0,5000):
