@@ -11,8 +11,13 @@ IMAGE_INFO = {
     "size": 32,
     "depth": 3
 }
+
+
 class AlexNet:
-    network = None
+    network = None,
+    loss = None,
+    train_step = None,
+    acc = None,
     keep_prob = tf.placeholder(dtype=tf.float32)
     x = tf.placeholder(dtype=tf.float32, shape=[None, IMAGE_INFO["size"], IMAGE_INFO["size"], IMAGE_INFO["depth"]])
     label = tf.placeholder(dtype=tf.int32, shape=[None])
@@ -40,7 +45,9 @@ class AlexNet:
             img = tf.image.per_image_standardization(img)
             return img, label[0]
         filenames = tf.constant(files)
-        file_dataset = tf.data.FixedLengthRecordDataset(filenames, IMAGE_INFO["size"]*IMAGE_INFO["size"]*IMAGE_INFO["depth"] + 1)\
+        file_dataset = tf.data.FixedLengthRecordDataset(
+            filenames,
+            IMAGE_INFO["size"]*IMAGE_INFO["size"]*IMAGE_INFO["depth"] + 1)\
             .map(map_reshape, num_parallel_calls=100).batch(mini_batch)
         return file_dataset.make_one_shot_iterator().get_next()
 
@@ -97,29 +104,43 @@ class AlexNet:
             w = tf.Variable(tf.truncated_normal(shape=[self.weights[6][0], 10], stddev=0.01))
             b = tf.Variable(tf.constant(value=0.1, shape=[10]))
             lay = self.layers["softmax"] = tf.nn.softmax(tf.matmul(lay, w) + b)
+        self.network = lay
+        self.loss = None
+        self.acc = None
         return lay
 
-    def loss(self, y):
-        one_hot_labels = tf.one_hot(self.label, 10, dtype=tf.float32)
-        return tf.reduce_mean(-tf.reduce_sum(one_hot_labels*tf.log(y), axis=[1]))
+    def loss(self):
+        if self.loss is None:
+            if self.network is None:
+                self.inference()
+            one_hot_labels = tf.one_hot(self.label, 10, dtype=tf.float32)
+            self.loss = tf.reduce_mean(-tf.reduce_sum(one_hot_labels*tf.log(self.network), axis=[1]))
+        return self.loss
 
-    def train_step(self, loss, alpha=0.0005):
-        return tf.train.AdamOptimizer(alpha).minimize(loss)
+    def train_step(self, alpha=0.0005):
+        if self.train_step is None:
+            if self.loss is None:
+                self.loss()
+            self.train_step = tf.train.AdamOptimizer(alpha).minimize(self.loss)
+        return self.train_step
 
-    def accuracy(self, y):
-        correct_prediction = tf.equal(tf.argmax(y, 1), tf.cast(self.label, dtype=tf.int64))
-        return tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    def accuracy(self):
+        if self.acc is None:
+            if self.network is None:
+                self.inference()
+            correct_prediction = tf.equal(tf.argmax(self.network, 1), tf.cast(self.label, dtype=tf.int64))
+            self.acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        return self.acc
 
 
 def main():
     alpha = 0.0005
     batch = 100
     alex_net = AlexNet()
-    network = alex_net.inference()
-    loss = alex_net.loss(network)
-    train_step = alex_net.train_step(loss, alpha)
+    loss = alex_net.loss()
+    train_step = alex_net.train_step(alpha)
     image_batch = alex_net.get_images(IMAGE_INFO["data_path"], batch)
-    acc = alex_net.accuracy(network)
+    acc = alex_net.accuracy()
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         for i in range(0,5000):
