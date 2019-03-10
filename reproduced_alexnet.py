@@ -13,8 +13,8 @@ class AlexNet:
         "w4": tf.Variable(tf.truncated_normal(shape=[3, 3, 192, 192], stddev=0.01)),
         "w5": tf.Variable(tf.truncated_normal(shape=[3, 3, 192, 128], stddev=0.01)),
         "w6": None,
-        "w7": tf.Variable(tf.truncated_normal(shape=[1024, 1024], stddev=0.01)),
-        "w8": tf.Variable(tf.truncated_normal(shape=[1024, 10], stddev=0.01))
+        "w7": tf.Variable(tf.truncated_normal(shape=[2048, 2048], stddev=0.01)),
+        "w8": tf.Variable(tf.truncated_normal(shape=[2048, 10], stddev=0.01))
     }
     bias = {
         "b1": tf.Variable(tf.constant(value=0.1, shape=[48])),
@@ -22,8 +22,8 @@ class AlexNet:
         "b3": tf.Variable(tf.constant(value=0.1, shape=[192])),
         "b4": tf.Variable(tf.constant(value=0.1, shape=[192])),
         "b5": tf.Variable(tf.constant(value=0.1, shape=[128])),
-        "b6": tf.Variable(tf.constant(value=0.1, shape=[1024])),
-        "b7": tf.Variable(tf.constant(value=0.1, shape=[1024])),
+        "b6": tf.Variable(tf.constant(value=0.1, shape=[2048])),
+        "b7": tf.Variable(tf.constant(value=0.1, shape=[2048])),
         "b8": tf.Variable(tf.constant(value=0.1, shape=[10]))
     }
     layers = {}
@@ -62,7 +62,7 @@ class AlexNet:
         with tf.name_scope("fc1"):
             conv5_shape = self.layers["conv5"].shape[1] * self.layers["conv5"].shape[2] * self.layers["conv5"].shape[3]
             reshaped_conv5 = tf.reshape(self.layers["conv5"], shape=[-1, conv5_shape.value])
-            self.weights["w6"] = tf.Variable(tf.truncated_normal(shape=[conv5_shape.value, 1024], stddev=0.1))
+            self.weights["w6"] = tf.Variable(tf.truncated_normal(shape=[conv5_shape.value, 2048], stddev=0.1))
             self.layers["fc1"] = tf.nn.dropout(tf.nn.relu(tf.matmul(reshaped_conv5, self.weights["w6"])
                                                           + self.bias["b6"]), self.keep_prob)
         with tf.name_scope("fc2"):
@@ -76,7 +76,7 @@ class AlexNet:
         one_hot_labels = tf.one_hot(self.label, 10, dtype=tf.float32)
         return tf.reduce_mean(-tf.reduce_sum(one_hot_labels*tf.log(y), axis=[1]))
 
-    def train_step(self, loss, alpha=0.00005):
+    def train_step(self, loss, alpha=0.0005):
         return tf.train.AdamOptimizer(alpha).minimize(loss)
 
     def accuracy(self, y):
@@ -98,7 +98,7 @@ def main():
     acc = alex_net.accuracy(network)
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for i in range(0, 25000):
+        for i in range(0,5000):
             if i % 500 == 0 and i != 0:
                 image_batch = alex_net.get_images(filenames, 100)
             images, labels = sess.run(image_batch)
