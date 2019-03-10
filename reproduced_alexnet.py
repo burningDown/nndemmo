@@ -28,8 +28,8 @@ class AlexNet:
         [3, 192],
         [3, 192],
         [3, 128],
-        [2048],
-        [2048]
+        [1024],
+        [1024]
     ]
     __layers = {}
 
@@ -49,7 +49,7 @@ class AlexNet:
         file_dataset = tf.data.FixedLengthRecordDataset(
             filenames,
             IMAGE_INFO["size"]*IMAGE_INFO["size"]*IMAGE_INFO["depth"] + 1)\
-            .map(map_reshape, num_parallel_calls=100).batch(mini_batch)
+            .map(map_reshape, num_parallel_calls=50000).shuffle(50000).batch(mini_batch)
         return file_dataset.make_one_shot_iterator().get_next()
 
     def __inference(self):
@@ -60,7 +60,7 @@ class AlexNet:
                                                        self.__weights[0][1]], stddev=0.01))
             b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[0][1]])),
             conv = tf.nn.relu(tf.nn.conv2d(self.x, w, [1, 1, 1, 1], 'SAME') + b)
-            lay = self.__layers["conv1"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
+            lay = self.__layers["conv1"] = tf.nn.max_pool(conv, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("conv2"):
             w = tf.Variable(tf.truncated_normal(shape=[self.__weights[1][0],
                                                        self.__weights[1][0],
@@ -68,7 +68,7 @@ class AlexNet:
                                                        self.__weights[1][1]], stddev=0.01))
             b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[1][1]]))
             conv = tf.nn.relu(tf.nn.conv2d(lay, w, [1, 1, 1, 1], 'SAME') + b)
-            lay = self.__layers["conv2"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
+            lay = self.__layers["conv2"] = tf.nn.max_pool(conv, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("conv3"):
             w = tf.Variable(tf.truncated_normal(shape=[self.__weights[2][0],
                                                        self.__weights[2][0],
@@ -90,7 +90,7 @@ class AlexNet:
                                                        self.__weights[4][1]], stddev=0.01))
             b = tf.Variable(tf.constant(value=0.1, shape=[self.__weights[4][1]]))
             conv = tf.nn.relu(tf.nn.conv2d(lay, w, [1, 1, 1, 1], 'SAME') + b)
-            lay = self.__layers["conv5"] = tf.nn.max_pool(conv, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
+            lay = self.__layers["conv5"] = tf.nn.max_pool(conv, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME')
         with tf.name_scope("fc1"):
             conv5_shape = lay.shape[1] * lay.shape[2] * lay.shape[3]
             reshaped_conv5 = tf.reshape(lay, shape=[-1, conv5_shape.value])
@@ -115,10 +115,10 @@ class AlexNet:
             if self.__network is None:
                 self.__inference()
             one_hot_labels = tf.one_hot(self.label, 10, dtype=tf.float32)
-            self.__loss = tf.reduce_mean(-tf.reduce_sum(one_hot_labels * tf.log(self.__network), axis=[1]))
+            self.__loss = tf.reduce_mean(-tf.reduce_sum(one_hot_labels * tf.log(self.__network + 1e-10), axis=[1]))
 
     def __inf_train_step(self, alpha):
-        if self.__train_step is None or alpha != 0.0005:
+        if self.__train_step is None:
             if self.__loss is None:
                 self.__inf_loss()
             self.__train_step = tf.train.AdamOptimizer(alpha).minimize(self.__loss)
@@ -147,13 +147,16 @@ class AlexNet:
 
 
 def main():
-    alpha = 0.0005
+    alpha = 0.0002
     batch = 100
     alex_net = AlexNet()
     image_batch = alex_net.get_images(IMAGE_INFO["data_path"], batch)
     with tf.Session() as sess:
-        for i in range(0,5000):
+        for i in range(0, 9000):
             if i % (50000 / batch) == 0 and i != 0:
+                image_batch = alex_net.get_images(IMAGE_INFO["test_path"], 10000)
+                images, labels = sess.run(image_batch)
+                print("test:", alex_net.test(sess, images, labels))
                 image_batch = alex_net.get_images(IMAGE_INFO["data_path"], batch)
             images, labels = sess.run(image_batch)
             result = alex_net.train_one_step(sess, images, labels, alpha)
