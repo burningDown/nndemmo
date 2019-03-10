@@ -35,12 +35,12 @@ class AlexNet:
                 tf.transpose(
                     tf.reshape(
                         tf.strided_slice(record_bytes, [1],
-                                         [IMAGE_INFO["size"]*IMAGE_INFO["size"]*IMAGE_INFO["depth"]]),
+                                         [IMAGE_INFO["size"]*IMAGE_INFO["size"]*IMAGE_INFO["depth"] + 1]),
                         shape=[3, 32, 32]), [1, 2, 0]), tf.float32)
             img = tf.image.per_image_standardization(img)
             return img, label[0]
         filenames = tf.constant(files)
-        file_dataset = tf.data.FixedLengthRecordDataset(filenames, 3073)\
+        file_dataset = tf.data.FixedLengthRecordDataset(filenames, IMAGE_INFO["size"]*IMAGE_INFO["size"]*IMAGE_INFO["depth"] + 1)\
             .map(map_reshape, num_parallel_calls=100).batch(mini_batch)
         return file_dataset.make_one_shot_iterator().get_next()
 
